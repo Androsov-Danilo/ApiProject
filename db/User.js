@@ -31,8 +31,25 @@ function getAllUser(callback) {
 
 function getUser(id, callback) {
     const query = `SELECT * FROM Users WHERE id = ${id}`;
-    client.query(query, callback);
+    client.query(query, (err, res) =>{
+        callback(res)
+    });
 }
+function getUserByApiKey(apiKey, callback) {
+    const query = `SELECT * FROM Users WHERE apiKey = '${apiKey}'`
+    client.query(query, (err, res)=>{
+        callback(res)
+    });
+}
+
+function verifyUser(apiKey, callback){
+    const query = `SELECT * FROM Users WHERE apiKey  = ${apiKey}`;
+    client.query(query, (err, res)=>{
+        callback(res)
+    });
+}
+
+
 
 function delUser(id) {
     const query = `DELETE FROM Users WHERE id = ${id}`;
@@ -45,10 +62,18 @@ function delUser(id) {
     });
 }
 
+function updateUserById(id, firstName, userName, admin){
+    const query = `UPDATE Users SET firstName = '${firstName}', userName = '${userName}', admin = ${admin} WHERE id = ${id}`;
+    client.query(query)
+}
+
 module.exports = {
     createTable: createTable,
     addUser: addUser,
     getAllUser: getAllUser,
     getUser: getUser,
-    delUser: delUser
+    delUser: delUser,
+    verifyUser: verifyUser,
+    updateUserById: updateUserById,
+    getUserByApiKey:getUserByApiKey
 };

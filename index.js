@@ -16,3 +16,4 @@ app.use('/user', userRoutes)
 app.listen(port,()=>{
     console.log('Server start')
 })
+// admin aaafbb43-94e1-424a-893c-657a9aca2522
