@@ -38,46 +38,73 @@ router.post('/',(req,res)=>{
 
 router.get('/:id', (req, resDel) => {
     const userId = req.params.id;
-    const foundUser = userDB.getUser(userId);
+    const apiKeyUser = req.headers['api-key'];
 
-    if (foundUser) {
-        resDel.status(200).json(foundUser); 
-    } else {
-        resDel.status(404).json({ status: 404, message: 'User not found' }); 
+    if (!apiKeyUser) {
+        return resDel.status(403).send('Add api-key to headers');
     }
+
+    if (apiKeyUser.length < 1) {
+        return resDel.status(403).send('Apikey is invalid');
+    }
+
+    userDB.getUserByApiKey(apiKeyUser, (resDBUser) => {
+        const userApiKey = resDBUser.rows;
+
+        if (!userApiKey || userApiKey.length < 1 || userApiKey[0].admin !== true) {
+            return resDel.status(403).send("You didn't have access");
+        }
+
+        userDB.getUser(userId, (result) => {
+            if (result.rows.length > 0) {
+                const user = result.rows[0];
+                resDel.status(200).send(user)
+            } else {
+                resDel.status(404).send('User didn’t exist');
+            }
+        });
+    });
 });
+
+
 
 router.delete('/:id', (req, res) => {
     const userId = req.params.id;
     const apiKeyfUser = req.headers['api-key']
     if(!apiKeyfUser){
-        res.status(403).send('Add apikey to headers')
-    } else {
-        apiKeyDB.isKey(apiKeyfUser, (err, res)=>{
-            const rowsKey = res.rows
-            const isUserAdmin = userDB.verifyUser(apiKeyfUser)
-            if(rowsKey.lenght < 1){
-                res.status(403).send('api-key is invalid')
-            }else if(isUserAdmin != 'true' ){
-                    res.status(404).json({ status: 404, message: 'You didn`t have access'});
-                    res.status(404).json({ status: 404, message: isUserAdmin});
-            }else{ 
-                const deletedUser = userDB.delUser(userId);
-                if (deletedUser) {
-                    res.status(404).json({ status: 404, message: 'User didn’t exist'});
-                } else {
-                    res.status(204).json({ status: 204, message: 'User deleted successfully' });    }
-                
-    }})
-    }
+        return res.status(403).send('Add apikey to headers')
+    }else{
+        apiKeyDB.isKey(apiKeyfUser, (errDb, resDBKey)=>{
+            const rowsKey = resDBKey.rows
+            userDB.getUserByApiKey(apiKeyfUser, (resAdmin)=>{
+                const adminUser = resAdmin.rows[0]
+                console.log(adminUser.admin)
+                if(rowsKey.length < 1){
+                    return res.status(403).send('api-key is invalid')
+                }else if(!adminUser.admin){
+                    res.status(403).send('You didnt have access')
+                }else{ 
+                    const deletedUser = userDB.delUser(userId);
+                    if (deletedUser) {
+                        res.status(404).json({ status: 404, message: 'User didn’t delete'});
+                    } else {
+                        res.status(204).send('User was deleted')    
+                    }
+                    
+                    
+                }
+        })
+        })
+
+    } 
 })
 
 router.get('/', (req, res)=>{
     const apiKeyUser = req.headers['api-key']
-    const admineUser = req.body.admin
-    if(!admineUser) {
-        res.status(403).send("You didn't have access")
-    }else{
+    // const admineUser = req.body.admin
+    // if(!admineUser) {
+    //     res.status(403).send("You didn't have access")
+    //}else{
         if(!apiKeyUser) {
             res.status(403).send('Add apikey to headers')
         }else{
@@ -97,7 +124,7 @@ router.get('/', (req, res)=>{
                 }
             })
         }
-    }
+    //}
 })
 
 router.put('/:id', (req, res)=>{
@@ -111,9 +138,9 @@ router.put('/:id', (req, res)=>{
                 res.status(403).send("You didn't have access")
             }else{
                 userDB.getUser(req.params.id,(resUser)=>{
-                    const userId = resUser.rows
-                    console.log(userId[0].firstName)
-                    if (userId[0] === undefined){
+                    const userId = resUser.rows[0]
+                    
+                    if (userId === undefined){
                         res.status(404).send('User didn’t exist')
                     }else{
                         const firstName = req.body.firstName
@@ -126,8 +153,7 @@ router.put('/:id', (req, res)=>{
                         }else if (admin == undefined){
                             res.status(400).send('add admin')
                         }else{
-                            
-                            userDB.updateUserById(userId[0].firstName = firstName, userId[0].userName = userName, userId[0].admin = admin)
+                            userDB.updateUserById(req.params.id,firstName,userName,admin)
                             res.status(200).send('User update')
                         }
                     }
@@ -140,31 +166,27 @@ router.put('/:id', (req, res)=>{
 
 router.put('/', (req, res)=>{
     const apiKeyUser = req.headers['api-key']
-    const userId = userDB.getUser(req.params.id)
     if(!apiKeyUser) {
         res.status(403).send('Add apikey to headers')
     }else{
-            userDB.verifyUser(apiKeyUser,(errPut, resPut) =>{
-                const userRows = resPut.rows
-                if(userRows.lenght < 1){
-                    res.status(403).send('api-key is invalid')
+        userDB.getUserByApiKey(apiKeyUser, (resUser)=>{
+            const userId = resUser.rows[0]
+            if (userId === undefined){
+                res.status(404).send('User didn’t exist')
+            }else{
+                const firstName = req.body.firstName
+                const userName = req.body.userName
+                if(firstName == undefined){
+                    res.status(400).send('add firstname')
+                }else if (userName == undefined){
+                    res.status(400).send('add username')
                 }else{
-                    const firstName = req.body.firstName
-                    const userName = req.body.userName
-                    if(firstName == undefined){
-                        res.status(400).send('add firstname')
-                    }else if (userName == undefined){
-                        res.status(400).send('add username')
-                    }else if (admin == undefined){
-                        res.status(400).send('add admin')
-                    }else{
-                        userDB.updateUserById(firstName, userName, admin)
-                        res.status(200).send('User update')
-                    }
+                    userDB.updateUserByApiKey(req.headers['api-key'],firstName,userName)
+                    res.status(200).send('User update')
                 }
-            })
+            }
+        })
         }
-    
     })
 
 

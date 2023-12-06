@@ -6,7 +6,7 @@ function createTable() {
         firstName VARCHAR(255),
         userName VARCHAR(255),
         apiKey VARCHAR(25),
-        admin BOOLEAN
+        admin boolean
     )`;
     client.query(query, (err, res) => {
         if (err) {
@@ -43,13 +43,11 @@ function getUserByApiKey(apiKey, callback) {
 }
 
 function verifyUser(apiKey, callback){
-    const query = `SELECT * FROM Users WHERE apiKey  = ${apiKey}`;
+    const query = `SELECT admin FROM Users WHERE apiKey  = ${apiKey}`;
     client.query(query, (err, res)=>{
         callback(res)
     });
 }
-
-
 
 function delUser(id) {
     const query = `DELETE FROM Users WHERE id = ${id}`;
@@ -62,11 +60,29 @@ function delUser(id) {
     });
 }
 
-function updateUserById(id, firstName, userName, admin){
-    const query = `UPDATE Users SET firstName = '${firstName}', userName = '${userName}', admin = ${admin} WHERE id = ${id}`;
-    client.query(query)
+async function updateUserById(id, firstName, userName, admin) {
+    const query = 'UPDATE Users SET firstName = $1, userName = $2, admin = $3 WHERE id = $4';
+    const values = [firstName, userName, admin, id];
+
+    try {
+        await client.query(query, values);
+        console.log(`User with ID ${id} updated successfully.`);
+    } catch (error) {
+        console.error('Error updating user:', error);
+    }
 }
 
+async function updateUserByApiKey(apiKey, firstName, userName) {
+    const query = 'UPDATE Users SET firstName = $1, userName = $2 WHERE apiKey = $3';
+    const values = [firstName, userName,apiKey];
+
+    try {
+        await client.query(query, values);
+        console.log(`User updated successfully.`);
+    } catch (error) {
+        console.error('Error updating user:', error);
+    }
+}
 module.exports = {
     createTable: createTable,
     addUser: addUser,
@@ -75,5 +91,6 @@ module.exports = {
     delUser: delUser,
     verifyUser: verifyUser,
     updateUserById: updateUserById,
-    getUserByApiKey:getUserByApiKey
+    getUserByApiKey:getUserByApiKey,
+    updateUserByApiKey: updateUserByApiKey
 };
