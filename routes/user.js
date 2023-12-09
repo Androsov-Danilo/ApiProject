@@ -24,7 +24,6 @@ router.post('/',(req,res)=>{
                 }else if (admin == undefined){
                     res.status(400).send('add admin')
                 }else{
-                    console.log('cfgvhjkl')
                     userDB.addUser(firstName, userName, admin, apiKeyUser)
                     res.sendStatus(201)
                 }
