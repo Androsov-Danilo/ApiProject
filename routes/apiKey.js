@@ -8,22 +8,4 @@ router.post('/', (req, res) => {
     res.send(ApiKey)
 });
 
-router.get('/', (req, res) => {
-    const userApiKey = req.headers['api-key'];
-
-    if (!userApiKey) {
-        return res.status(403).send('ApiKey is invalid');
-    }
-
-    userDB.getUserByApiKey(userApiKey, (resDBUser) => {
-        const user = resDBUser.rows[0];
-
-        if (!user) {
-            return res.status(404).send('User didn’t exist');
-        }
-
-        return res.status(200).send(userApiKey)
-    });
-});
-
 module.exports = router;

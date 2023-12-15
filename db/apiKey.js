@@ -33,7 +33,7 @@ function addApiKey() {
 function isKey(apiKey, callback) {
     const query = `SELECT * FROM ApiKey WHERE key = '${apiKey}'`;
     client.query(query, (err, res) => {
-        callback(err, res);
+        callback(res);
     });
 }
 
